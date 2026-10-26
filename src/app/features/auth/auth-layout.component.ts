@@ -52,7 +52,9 @@ import { RouterOutlet } from '@angular/router';
       justify-content: space-between;
       padding: var(--s-7);
       background: var(--forest);
-      color: #efe7da;
+      /* --on-forest is ivory in light mode and near-black in dark mode, where
+         the panel turns light sage, so the text always contrasts. */
+      color: var(--on-forest);
       overflow: hidden;
     }
     .mark {
@@ -82,7 +84,7 @@ import { RouterOutlet } from '@angular/router';
     figcaption {
       margin-top: var(--s-4);
       font-size: var(--step-0);
-      color: #c8d0c2;
+      color: color-mix(in srgb, var(--on-forest) 78%, var(--forest));
     }
     .botanical {
       position: absolute;
@@ -90,13 +92,12 @@ import { RouterOutlet } from '@angular/router';
       bottom: -10px;
       width: min(52%, 300px);
       fill: none;
-      stroke: #a8b5a0;
+      stroke: color-mix(in srgb, var(--on-forest) 30%, var(--forest));
       stroke-width: 1.4;
       stroke-linecap: round;
-      opacity: 0.85;
     }
     .botanical .leaf {
-      fill: rgb(168 181 160 / 0.18);
+      fill: color-mix(in srgb, var(--on-forest) 7%, transparent);
     }
     .botanical .bud {
       fill: #d8b9b4;
