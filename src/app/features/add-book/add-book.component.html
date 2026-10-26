@@ -1,0 +1,132 @@
+<div class="page">
+  @if (draft(); as d) {
+    <div class="page-head">
+      <div>
+        @if (tab() === 'search') {
+          <button type="button" class="back link" (click)="backToSearch()"><svg lucideArrowLeft [size]="15"></svg> Back to results</button>
+        }
+        <h1>{{ d.title ? 'Check the details' : 'Add a book by hand' }}</h1>
+        <p class="lede">
+          {{ d.title ? 'Everything here can be edited before it goes on your shelf.' : 'For the books no catalogue knows about.' }}
+        </p>
+      </div>
+    </div>
+    <app-book-form
+      [initial]="d"
+      [busy]="saving()"
+      [submitLabel]="forWishlist() ? 'Save to my to-read list' : 'Add to my shelf'"
+      (saved)="save($event)"
+      (cancelled)="cancel()"
+    />
+  } @else {
+    <div class="page-head">
+      <div>
+        <h1>{{ forWishlist() ? 'Add to your to-read list' : 'Add a book' }}</h1>
+        <p class="lede">Find it in a catalogue, or write it in yourself.</p>
+      </div>
+    </div>
+
+    <div class="tabs" role="tablist" aria-label="How to add a book">
+      <button type="button" role="tab" id="tab-search" aria-controls="panel-search" [attr.aria-selected]="tab() === 'search'" [class.active]="tab() === 'search'" (click)="tab.set('search')">
+        <svg lucideSearch [size]="16"></svg> Search a catalogue
+      </button>
+      <button type="button" role="tab" id="tab-manual" aria-controls="panel-manual" [attr.aria-selected]="tab() === 'manual'" [class.active]="tab() === 'manual'" (click)="startManual()">
+        <svg lucidePenLine [size]="16"></svg> Enter by hand
+      </button>
+    </div>
+
+    <section id="panel-search" role="tabpanel" aria-labelledby="tab-search" class="search-panel">
+      <form class="search-bar" role="search" (submit)="$event.preventDefault(); submitSearch()">
+        <label for="book-search" class="visually-hidden">Search by title, author or ISBN</label>
+        <svg lucideSearch [size]="20" class="search-icon" aria-hidden="true"></svg>
+        <input
+          #searchInput
+          id="book-search"
+          type="search"
+          class="search-input"
+          placeholder="Title, author or ISBN"
+          autocomplete="off"
+          enterkeyhint="search"
+          [value]="query()"
+          (input)="onQueryInput(searchInput.value)"
+          aria-describedby="search-help"
+        />
+        @if (query()) {
+          <button type="button" class="clear" (click)="clearQuery()" aria-label="Clear search"><svg lucideX [size]="16"></svg></button>
+        }
+      </form>
+      <div class="search-meta">
+        <span id="search-help" class="hint">Results appear as you type.</span>
+        <div class="source" role="radiogroup" aria-label="Catalogue">
+          <span class="hint">Catalogue:</span>
+          <button type="button" role="radio" [attr.aria-checked]="source() === 'google_books'" [class.on]="source() === 'google_books'" (click)="setSource('google_books')">Google Books</button>
+          <button type="button" role="radio" [attr.aria-checked]="source() === 'open_library'" [class.on]="source() === 'open_library'" (click)="setSource('open_library')">Open Library</button>
+        </div>
+      </div>
+
+      <div class="results" aria-live="polite" [attr.aria-busy]="searching()">
+        @if (searching() && !results().length) {
+          @for (i of [1, 2, 3, 4]; track i) {
+            <div class="result skeleton-row" aria-hidden="true">
+              <div class="skeleton thumb"></div>
+              <div class="lines"><div class="skeleton l1"></div><div class="skeleton l2"></div><div class="skeleton l3"></div></div>
+            </div>
+          }
+          <span class="visually-hidden">Searching…</span>
+        } @else if (searchError()) {
+          <app-empty-state art="search" heading="The catalogue didn’t answer" [message]="searchError()">
+            <button type="button" class="btn" (click)="submitSearch()">Try again</button>
+            <button type="button" class="btn btn-primary" (click)="startManual()">Add it by hand</button>
+          </app-empty-state>
+        } @else if (searchedFor() && !results().length) {
+          <app-empty-state art="search" heading="Nothing by that name" [message]="'We couldn’t find “' + searchedFor() + '”. Try the other catalogue, fewer words, or the ISBN from the back cover.'">
+            <button type="button" class="btn" (click)="setSource(source() === 'google_books' ? 'open_library' : 'google_books')">
+              Search {{ source() === 'google_books' ? 'Open Library' : 'Google Books' }}
+            </button>
+            <button type="button" class="btn btn-primary" (click)="startManual()">Add it by hand</button>
+          </app-empty-state>
+        } @else if (results().length) {
+          @if (fallbackNote()) {
+            <p class="fallback">{{ fallbackNote() }}</p>
+          }
+          <p class="count hint">{{ results().length }} {{ results().length === 1 ? 'match' : 'matches' }} for “{{ searchedFor() }}”</p>
+          <ul class="result-list" [class.dim]="searching()">
+            @for (r of results(); track r.source + r.externalId) {
+              <li class="result">
+                <div class="thumb-wrap">
+                  <app-book-cover [title]="r.title" [authors]="r.authors" [coverUrl]="r.thumbnailUrl" [decorative]="true" />
+                </div>
+                <div class="info">
+                  <h3>{{ r.title }}</h3>
+                  @if (r.subtitle) {
+                    <p class="subtitle">{{ r.subtitle }}</p>
+                  }
+                  <p class="by">{{ r.authors.length ? authorLine(r.authors) : 'Author not listed' }}</p>
+                  <p class="facts">
+                    @if (r.publishedYear) { <span>{{ r.publishedYear }}</span> }
+                    @if (r.publisher) { <span>{{ r.publisher }}</span> }
+                    @if (r.pageCount) { <span>{{ r.pageCount }} pages</span> }
+                  </p>
+                </div>
+                <div class="result-actions">
+                  <button type="button" class="btn btn-primary btn-sm" (click)="choose(r)" [disabled]="choosing() === r.externalId" [attr.aria-label]="'Choose ' + r.title">
+                    @if (choosing() === r.externalId) { <span class="spinner" aria-hidden="true"></span> } Choose
+                  </button>
+                  <button type="button" class="btn btn-sm btn-quiet" (click)="saveToRead(r)" [disabled]="quickSaving() === r.externalId" [attr.aria-label]="'Save ' + r.title + ' to read later'">
+                    @if (quickSaving() === r.externalId) { <span class="spinner" aria-hidden="true"></span> } @else { <svg lucideBookmark [size]="14"></svg> }
+                    To read
+                  </button>
+                </div>
+              </li>
+            }
+          </ul>
+          <p class="cant-find hint">Not the right one? <button type="button" class="link" (click)="startManual()">Add it by hand</button>.</p>
+        } @else {
+          <div class="idle">
+            <p class="serif">Try a title you love, an author, or the thirteen digits above a barcode.</p>
+          </div>
+        }
+      </div>
+    </section>
+  }
+</div>

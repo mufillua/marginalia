@@ -1,0 +1,242 @@
+<div class="page">
+  @if (book(); as b) {
+    <a routerLink="/shelf" class="back"><svg lucideArrowLeft [size]="15"></svg> My books</a>
+
+    <article class="spread">
+      <!-- Left page: the object -->
+      <aside class="cover-side">
+        <div class="cover-frame">
+          <app-book-cover [title]="b.title" [authors]="b.authors" [coverUrl]="b.coverUrl" [eager]="true" [ribbon]="b.status === 'reading'" />
+        </div>
+
+        <div class="controls">
+          <div class="field">
+            <label for="status-select">Status</label>
+            <select
+              #statusSelect
+              id="status-select"
+              class="select"
+              [class.flash]="statusFlash()"
+              [value]="b.status"
+              [disabled]="busy() === 'status'"
+              (change)="changeStatus(b, $any(statusSelect.value), statusSelect)"
+            >
+              @for (s of statuses; track s) {
+                <option [value]="s" [selected]="s === b.status">{{ statusLabels[s] }}</option>
+              }
+            </select>
+          </div>
+          <div class="button-row">
+            <button
+              type="button"
+              class="btn btn-sm fav"
+              [class.on]="b.isFavorite"
+              [attr.aria-pressed]="b.isFavorite"
+              [disabled]="busy() === 'fav'"
+              (click)="toggleFavorite(b)"
+            >
+              <svg lucideHeart [size]="15"></svg>
+              {{ b.isFavorite ? 'Favourite' : 'Add to favourites' }}
+            </button>
+          </div>
+          <div class="button-row">
+            <a class="btn btn-sm" [routerLink]="['/book', b.id, 'edit']"><svg lucidePencil [size]="15"></svg> Edit</a>
+            <button type="button" class="btn btn-sm btn-danger" (click)="remove(b)" [disabled]="busy() === 'delete'">
+              <svg lucideTrash [size]="15"></svg> Delete
+            </button>
+          </div>
+        </div>
+      </aside>
+
+      <!-- Right page: the record -->
+      <div class="record">
+        <header class="title-block">
+          @if (bookOfYear(); as year) {
+            <p class="boty"><svg lucideAward [size]="15"></svg> Your book of {{ year }}</p>
+          }
+          <h1>{{ b.title }}</h1>
+          <p class="byline">{{ author() }}</p>
+          @if (b.genres.length) {
+            <ul class="tag-list genres" aria-label="Genres">
+              @for (g of b.genres; track g) {
+                <li class="tag">{{ g }}</li>
+              }
+            </ul>
+          }
+          @if (facts().length) {
+            <dl class="facts">
+              @for (f of facts(); track f.label) {
+                <div><dt>{{ f.label }}</dt><dd>{{ f.value }}</dd></div>
+              }
+            </dl>
+          }
+        </header>
+
+        <section class="about" aria-labelledby="about-h">
+          <div class="about-head">
+            <h2 id="about-h">About the book</h2>
+            @if (summarySourceLabel()) {
+              <span class="meta">{{ summarySourceLabel() }}</span>
+            }
+          </div>
+          @if (b.summary) {
+            <p class="reading-text">{{ b.summary }}</p>
+          } @else {
+            <p class="missing">No description yet. <a [routerLink]="['/book', b.id, 'edit']">Add a summary</a> in your own words.</p>
+          }
+        </section>
+
+        <section class="yours" aria-labelledby="yours-h">
+          <h2 id="yours-h">Your reading</h2>
+
+          <div class="status-line">
+            <app-status-badge [status]="b.status" />
+            @if (b.startedOn) {
+              <span class="meta">Started {{ formatLongDate(b.startedOn) }}</span>
+            }
+            @if (b.finishedOn && (b.status === 'completed' || b.status === 'dnf')) {
+              <span class="meta">{{ b.status === 'completed' ? 'Finished' : 'Stopped' }} {{ formatLongDate(b.finishedOn) }}</span>
+            }
+          </div>
+
+          @if (b.status === 'reading' || b.status === 'paused' || b.status === 'dnf') {
+            <div class="progress-block">
+              @if (b.pageCount) {
+                <app-vine-progress [percent]="percent() ?? 0" [label]="'Progress in ' + b.title" [valueText]="'Page ' + b.currentPage + ' of ' + b.pageCount" />
+                <p class="progress-words serif">
+                  Page {{ b.currentPage }} of {{ b.pageCount }}, <em>{{ percent() }}% of the way</em>
+                </p>
+              } @else {
+                <p class="meta">Add the total pages (Edit) to see how far along you are.</p>
+              }
+              <form class="page-form" (ngSubmit)="saveProgress(b)">
+                <label for="page-now">I'm on page</label>
+                <input id="page-now" name="page" class="input" type="number" min="0" [max]="b.pageCount ?? 50000" inputmode="numeric" [(ngModel)]="pageInput" />
+                <button type="submit" class="btn btn-sm btn-primary" [disabled]="busy() === 'progress'">Update</button>
+              </form>
+              @if (lastPagePrompt()) {
+                <div class="last-page" role="status">
+                  <p class="serif">That's the last page. Did you finish it?</p>
+                  <button type="button" class="btn btn-sm btn-primary" (click)="changeStatus(b, 'completed')">Mark as finished</button>
+                  <button type="button" class="btn btn-sm btn-quiet" (click)="lastPagePrompt.set(false)">Not yet</button>
+                </div>
+              }
+            </div>
+          }
+
+          @if (b.status !== 'want_to_read') {
+            <div class="rating-block">
+              <span class="label">Your rating</span>
+              <app-star-rating [value]="b.rating" [editable]="true" [size]="22" [disabled]="busy() === 'rating'" (valueChange)="rate(b, $event)" [showValue]="true" />
+            </div>
+          } @else {
+            <div class="wish">
+              @if (b.wishReason) {
+                <p class="serif"><em>Why: </em>{{ b.wishReason }}</p>
+              }
+              <button type="button" class="btn btn-primary btn-sm" (click)="changeStatus(b, 'reading')">Start reading</button>
+            </div>
+          }
+
+          @if (b.review) {
+            <div class="text-block">
+              <h3>Review</h3>
+              <p class="reading-text">{{ b.review }}</p>
+            </div>
+          } @else if (b.status === 'completed' || b.status === 'dnf') {
+            <p class="missing">No review yet. <a [routerLink]="['/book', b.id, 'edit']">Write one</a> while it's fresh.</p>
+          }
+        </section>
+
+        <section class="quotes" aria-labelledby="quotes-h">
+          <div class="section-row">
+            <h2 id="quotes-h">Favourite quotes</h2>
+            @if (!addingQuote()) {
+              <button type="button" class="btn btn-sm" (click)="addingQuote.set(true)"><svg lucidePlus [size]="15"></svg> Add a quote</button>
+            }
+          </div>
+          @if (addingQuote()) {
+            <form class="quote-form" (ngSubmit)="addQuote(b)">
+              <label for="new-quote" class="visually-hidden">Quote</label>
+              <textarea id="new-quote" name="quote" class="textarea serif" rows="3" [(ngModel)]="newQuote" placeholder="A line worth keeping…" required></textarea>
+              <div class="quote-form-row">
+                <label for="new-quote-page" class="visually-hidden">Page</label>
+                <input id="new-quote-page" name="page" class="input" type="number" min="1" placeholder="Page" [(ngModel)]="newQuotePage" />
+                <button type="button" class="btn btn-sm btn-quiet" (click)="addingQuote.set(false)">Cancel</button>
+                <button type="submit" class="btn btn-sm btn-primary" [disabled]="busy() === 'quote' || !newQuote().trim()">Save quote</button>
+              </div>
+            </form>
+          }
+          @if (quotes().length) {
+            <ul class="quote-list">
+              @for (q of quotes(); track q.id) {
+                <li>
+                  <svg lucideQuote [size]="18" class="qmark" aria-hidden="true"></svg>
+                  <blockquote>{{ q.body }}</blockquote>
+                  <div class="quote-meta">
+                    @if (q.page) { <span class="meta">Page {{ q.page }}</span> }
+                    <button type="button" class="link small" (click)="removeQuote(q)" [attr.aria-label]="'Remove quote from page ' + (q.page ?? '')">Remove</button>
+                  </div>
+                </li>
+              }
+            </ul>
+          } @else if (!addingQuote()) {
+            <p class="missing">Lines you want to remember will live here.</p>
+          }
+        </section>
+
+        @if (b.notes || b.whyItMatters) {
+          <section class="notes" aria-labelledby="notes-h">
+            <h2 id="notes-h">In the margins</h2>
+            @if (b.whyItMatters) {
+              <div class="text-block matters">
+                <h3>Why it matters</h3>
+                <p class="reading-text">{{ b.whyItMatters }}</p>
+              </div>
+            }
+            @if (b.notes) {
+              <div class="text-block">
+                <h3>Notes</h3>
+                <p class="plain-notes">{{ b.notes }}</p>
+              </div>
+            }
+          </section>
+        }
+
+        <section class="journal" aria-labelledby="journal-h">
+          <div class="section-row">
+            <h2 id="journal-h">From your journal</h2>
+            <a class="btn btn-sm" routerLink="/journal" [queryParams]="{ book: b.id, write: 1 }"><svg lucidePlus [size]="15"></svg> Write about it</a>
+          </div>
+          @if (entries().length) {
+            <ul class="entry-list">
+              @for (e of entries(); track e.id) {
+                <li>
+                  <a routerLink="/journal" [queryParams]="{ book: b.id }" [fragment]="'entry-' + e.id">
+                    <span class="entry-date">{{ formatShortDate(e.entryDate) }}</span>
+                    <span class="entry-title">{{ e.title || (e.body.length > 90 ? e.body.slice(0, 90) + '…' : e.body) }}</span>
+                  </a>
+                </li>
+              }
+            </ul>
+          } @else {
+            <p class="missing">No entries about this book yet.</p>
+          }
+        </section>
+      </div>
+    </article>
+  } @else if (library.loadState() === 'loading' || library.loadState() === 'idle') {
+    <div class="spread loading" aria-busy="true">
+      <div class="skeleton" style="aspect-ratio: 2/3"></div>
+      <div style="display: grid; gap: 14px; align-content: start">
+        <div class="skeleton" style="height: 48px; width: 70%"></div>
+        <div class="skeleton" style="height: 18px; width: 40%"></div>
+        <div class="skeleton" style="height: 140px"></div>
+      </div>
+    </div>
+  } @else {
+    <app-empty-state heading="This book isn’t on your shelf" message="It may have been deleted, perhaps on another device.">
+      <a routerLink="/shelf" class="btn btn-primary">Go to my books</a>
+    </app-empty-state>
+  }
+</div>

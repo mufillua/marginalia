@@ -1,0 +1,94 @@
+:host {
+  display: block;
+}
+h1 {
+  font-size: var(--step-4);
+  font-weight: 380;
+}
+.intro {
+  margin-top: var(--s-2);
+  color: var(--ink-soft);
+  font-family: var(--serif);
+  font-style: italic;
+  font-size: var(--step-1);
+}
+form {
+  display: grid;
+  gap: var(--s-4);
+  margin-top: var(--s-6);
+}
+.password-wrap {
+  position: relative;
+}
+.password-wrap .input {
+  padding-right: 48px;
+}
+.reveal {
+  position: absolute;
+  right: 4px;
+  top: 2px;
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border: 0;
+  background: none;
+  color: var(--ink-soft);
+  border-radius: var(--radius);
+}
+.reveal:hover {
+  color: var(--ink);
+}
+.row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: var(--s-3);
+}
+.row a {
+  font-size: var(--step--1);
+}
+.alert {
+  padding: 12px 14px;
+  border-radius: var(--radius);
+  background: var(--danger-soft);
+  color: var(--danger);
+  font-size: var(--step--1);
+}
+.notice {
+  padding: var(--s-5);
+  border-radius: var(--radius-lg);
+  background: var(--leaf);
+  display: grid;
+  gap: var(--s-3);
+  margin-top: var(--s-6);
+}
+.notice h2 {
+  font-size: var(--step-2);
+  font-style: italic;
+  font-weight: 380;
+}
+.notice p {
+  color: var(--ink-soft);
+}
+.switch {
+  margin-top: var(--s-6);
+  padding-top: var(--s-5);
+  border-top: 1px solid var(--rule);
+  font-size: var(--step-0);
+  color: var(--ink-soft);
+}
+.or {
+  display: flex;
+  align-items: center;
+  gap: var(--s-3);
+  color: var(--ink-faint);
+  font-size: var(--step--1);
+}
+.or::before,
+.or::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--rule);
+}

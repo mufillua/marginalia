@@ -1,0 +1,186 @@
+<div class="page">
+  <div class="page-head">
+    <div>
+      <h1>Your reading year</h1>
+      <p class="lede">Counted from the books and entries you've saved.</p>
+    </div>
+    @if (stats.yearsWithReading().length > 1) {
+      <div class="field year-pick">
+        <label for="year-select">Year</label>
+        <select id="year-select" class="select" [value]="year()" (change)="chooseYear(ys.value)" #ys>
+          @for (y of stats.yearsWithReading(); track y) {
+            <option [value]="y" [selected]="y === year()">{{ y }}</option>
+          }
+        </select>
+      </div>
+    }
+  </div>
+
+  @if (library.loadState() === 'loading' || library.loadState() === 'idle') {
+    <div class="skeleton" style="height: 60px; width: 70%"></div>
+  } @else {
+    <p class="headline">
+      @if (completedInYear().length) {
+        In {{ year() }} you finished <strong>{{ completedInYear().length }} {{ completedInYear().length === 1 ? 'book' : 'books' }}</strong>@if (pagesInYear()) {<span>, about </span><strong>{{ fmt(pagesInYear()) }} pages</strong>}<span>.</span>
+      } @else if (isCurrentYear()) {
+        No finished books in {{ year() }} yet.
+      } @else {
+        No finished books recorded in {{ year() }}.
+      }
+    </p>
+
+    <!-- Goal -->
+    <section class="section goal" aria-labelledby="goal-h">
+      <div class="section-head"><h2 id="goal-h">Reading goal for {{ year() }}</h2></div>
+      @if (goal()?.targetBooks; as target) {
+        <app-vine-progress [percent]="goalPercent()" [label]="'Reading goal for ' + year()" [valueText]="completedInYear().length + ' of ' + target + ' books'" />
+        <p class="goal-words">
+          {{ completedInYear().length }} of {{ target }} books
+          @if (completedInYear().length >= target) {
+            <em>— you reached your goal.</em>
+          } @else if (isCurrentYear()) {
+            <em>— {{ target - completedInYear().length }} to go.</em>
+          }
+        </p>
+      } @else {
+        <p class="goal-words">Set a number to grow towards. You can change it whenever you like.</p>
+      }
+      <form class="goal-form" (ngSubmit)="saveGoal()">
+        <div class="presets" role="group" aria-label="Quick goals">
+          @for (p of presets; track p) {
+            <button type="button" class="pill" [class.on]="goal()?.targetBooks === p" [attr.aria-pressed]="goal()?.targetBooks === p" (click)="saveGoal(p)" [disabled]="savingGoal()">{{ p }} books</button>
+          }
+        </div>
+        <div class="custom">
+          <label for="goal-custom">Or your own number</label>
+          <input id="goal-custom" name="target" class="input" type="number" min="1" max="1000" inputmode="numeric" [(ngModel)]="targetInput" />
+          <button type="submit" class="btn btn-sm btn-primary" [disabled]="savingGoal()">Save goal</button>
+          @if (goal()?.targetBooks) {
+            <button type="button" class="btn btn-sm btn-quiet" (click)="saveGoal(null)" [disabled]="savingGoal()">Remove goal</button>
+          }
+        </div>
+      </form>
+    </section>
+
+    <!-- Monthly history -->
+    <section class="section" aria-labelledby="months-h">
+      <div class="section-head">
+        <h2 id="months-h">Books finished each month</h2>
+        <button type="button" class="link" (click)="showTable.set(!showTable())" [attr.aria-expanded]="showTable()">{{ showTable() ? 'Show chart' : 'Show as a table' }}</button>
+      </div>
+      @if (showTable()) {
+        <table class="data-table">
+          <caption class="visually-hidden">Books finished each month in {{ year() }}</caption>
+          <thead><tr><th scope="col">Month</th><th scope="col">Books finished</th></tr></thead>
+          <tbody>
+            @for (count of monthly(); track $index) {
+              <tr><th scope="row">{{ months[$index] }}</th><td>{{ count }}</td></tr>
+            }
+          </tbody>
+        </table>
+      } @else {
+        <div class="bars" role="img" [attr.aria-label]="'Books finished each month in ' + year() + ': ' + monthly().join(', ') + '. Use Show as a table for details.'">
+          @for (count of monthly(); track $index; let m = $index) {
+            <div class="col" [class.future]="isCurrentYear() && m > currentMonth">
+              <span class="tip" aria-hidden="true">{{ months[m] }}: {{ count }} {{ count === 1 ? 'book' : 'books' }}</span>
+              <div class="track">
+                @if (m === peakMonth()) {
+                  <span class="peak" aria-hidden="true">{{ count }}</span>
+                }
+                <div class="bar" [style.height.%]="barHeight(count)"></div>
+              </div>
+              <span class="month" [class.now]="isCurrentYear() && m === currentMonth" aria-hidden="true">{{ months[m] }}</span>
+            </div>
+          }
+        </div>
+      }
+      @if (stats.undatedCompleted()) {
+        <p class="hint footnote">{{ stats.undatedCompleted() }} finished {{ stats.undatedCompleted() === 1 ? 'book has' : 'books have' }} no finish date, so {{ stats.undatedCompleted() === 1 ? 'it isn’t' : 'they aren’t' }} counted by month.</p>
+      }
+    </section>
+
+    <div class="two-col section">
+      <!-- The ledger -->
+      <section aria-labelledby="ledger-h">
+        <div class="section-head"><h2 id="ledger-h">Your library</h2></div>
+        <dl class="ledger">
+          <div><dt>Books in your library</dt><dd>{{ stats.counts().total }}</dd></div>
+          <div><dt>Finished, all time</dt><dd>{{ stats.counts().completed }}</dd></div>
+          <div><dt>Reading now</dt><dd>{{ stats.counts().reading }}</dd></div>
+          <div><dt>On your to-read list</dt><dd>{{ stats.counts().wishlist }}</dd></div>
+          <div><dt>Paused</dt><dd>{{ stats.counts().paused }}</dd></div>
+          <div><dt>Did not finish</dt><dd>{{ stats.counts().dnf }}</dd></div>
+          <div><dt>Finished this month</dt><dd>{{ stats.completedThisMonth() }}</dd></div>
+          <div><dt>Finished this year</dt><dd>{{ stats.completedThisYear() }}</dd></div>
+          <div>
+            <dt>Pages read, all time <span class="sub">{{ stats.pages().booksWithData ? 'finished books plus progress in ' + stats.pages().booksWithData + (stats.pages().booksWithData === 1 ? ' book' : ' books') + ' with page counts' : 'add page counts to see this' }}</span></dt>
+            <dd>{{ stats.pages().booksWithData ? fmt(stats.pages().pages) : '—' }}</dd>
+          </div>
+          <div>
+            <dt>Average rating <span class="sub">{{ stats.averageRating().count ? 'across ' + stats.averageRating().count + ' rated' : 'rate a book to see this' }}</span></dt>
+            <dd>{{ stats.averageRating().average ?? '—' }}</dd>
+          </div>
+          <div><dt>Journal entries</dt><dd>{{ stats.counts().journalEntries }}</dd></div>
+          <div><dt>Quotes kept</dt><dd>{{ stats.counts().quotes }}</dd></div>
+        </dl>
+      </section>
+
+      <!-- Genres -->
+      <section aria-labelledby="genres-h">
+        <div class="section-head"><h2 id="genres-h">Favourite genres</h2></div>
+        @if (stats.topGenres().length) {
+          <ul class="genres">
+            @for (g of stats.topGenres(); track g.genre) {
+              <li>
+                <span class="g-name">{{ g.genre }}</span>
+                <span class="g-bar" aria-hidden="true"><span [style.width.%]="(g.count / genreMax()) * 100"></span></span>
+                <span class="g-count">{{ g.count }} <span class="visually-hidden">{{ g.count === 1 ? 'book' : 'books' }}</span></span>
+              </li>
+            }
+          </ul>
+          <p class="hint">Across books you've started, finished, paused or set aside.</p>
+        } @else {
+          <p class="empty-note">Add genres to your books and your favourites will show here.</p>
+        }
+      </section>
+    </div>
+
+    <!-- Book of the Year -->
+    <section class="section boty" aria-labelledby="boty-h">
+      <div class="section-head"><h2 id="boty-h">Book of {{ year() }}</h2></div>
+      <div class="boty-grid">
+        @if (botyBook(); as b) {
+          <a [routerLink]="['/book', b.id]" class="boty-cover">
+            <app-book-cover [title]="b.title" [authors]="b.authors" [coverUrl]="b.coverUrl" />
+          </a>
+        } @else {
+          <div class="boty-placeholder" aria-hidden="true"><svg lucideAward [size]="28"></svg></div>
+        }
+        @if (completedInYear().length) {
+          <form class="boty-form" (ngSubmit)="saveBookOfYear()">
+            <div class="field">
+              <label for="boty-select">The one that meant the most</label>
+              <select id="boty-select" name="boty" class="select" [(ngModel)]="botyId">
+                <option value="">Not chosen yet</option>
+                @for (b of completedInYear(); track b.id) {
+                  <option [value]="b.id">{{ b.title }} ({{ authorLine(b.authors) }})</option>
+                }
+              </select>
+            </div>
+            @if (botyId()) {
+              <div class="field">
+                <label for="boty-note">Why this one? <span class="optional">(optional)</span></label>
+                <textarea id="boty-note" name="note" class="textarea serif" rows="3" [(ngModel)]="botyNote" maxlength="2000"></textarea>
+              </div>
+            }
+            <div>
+              <button type="submit" class="btn btn-primary btn-sm" [disabled]="savingBoty()">Save</button>
+            </div>
+          </form>
+        } @else {
+          <p class="empty-note">Finish a book in {{ year() }} and you can choose your favourite of the year here.</p>
+        }
+      </div>
+    </section>
+  }
+</div>

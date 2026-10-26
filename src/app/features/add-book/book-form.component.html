@@ -1,0 +1,232 @@
+<form [formGroup]="form" (ngSubmit)="submit()" novalidate class="book-form">
+  @if (submitted() && form.invalid) {
+    <p class="form-alert" role="alert">A few details need attention before this can be saved. They're marked below.</p>
+  }
+
+  <!-- The book itself -->
+  <section class="part" aria-labelledby="part-book">
+    <h2 id="part-book">The book</h2>
+    <div class="book-grid">
+      <div class="cover-col">
+        <app-book-cover [title]="previewTitle()" [authors]="previewAuthors()" [coverUrl]="previewCover()" [decorative]="true" />
+        <div class="cover-actions">
+          <label class="btn btn-sm upload" [class.is-busy]="uploading()">
+            @if (uploading()) {
+              <span class="spinner" aria-hidden="true"></span> Uploading…
+            } @else {
+              <svg lucideImagePlus [size]="15"></svg> Upload a cover
+            }
+            <input type="file" accept="image/jpeg,image/png,image/webp" (change)="onCoverFile($event)" [disabled]="uploading()" class="visually-hidden" />
+          </label>
+          @if (previewCover()) {
+            <button type="button" class="btn btn-sm btn-quiet" (click)="clearCover()">Remove cover</button>
+          }
+        </div>
+      </div>
+
+      <div class="form-grid">
+        <div class="field span-2">
+          <label for="bf-title">Title</label>
+          <input id="bf-title" class="input title-input" formControlName="title" placeholder="e.g. Middlemarch" [attr.aria-invalid]="invalid('title')" aria-describedby="bf-title-err" />
+          @if (invalid('title')) {
+            <span id="bf-title-err" class="error-text">Every book needs a title.</span>
+          }
+        </div>
+
+        <div class="field span-2">
+          <label for="bf-authors">Author</label>
+          <app-chips-input formControlName="authors" inputId="bf-authors" placeholder="Type a name and press Enter" describedBy="bf-authors-hint" />
+          @if (invalid('authors')) {
+            <span id="bf-authors-hint" class="error-text">Add at least one author. Use “Anonymous” if no one is credited.</span>
+          } @else {
+            <span id="bf-authors-hint" class="hint">Add co-authors one at a time.</span>
+          }
+        </div>
+
+        <div class="field span-2">
+          <label for="bf-genres">Genres <span class="optional">(optional)</span></label>
+          <app-chips-input formControlName="genres" inputId="bf-genres" placeholder="Literary fiction, Poetry…" [suggestions]="genreSuggestions()" describedBy="bf-genres-hint" />
+          <span id="bf-genres-hint" class="hint">Press Enter after each genre.</span>
+        </div>
+
+        <div class="field span-2">
+          <label for="bf-summary">Summary <span class="optional">(optional)</span></label>
+          <textarea id="bf-summary" class="textarea serif" formControlName="summary" rows="6" placeholder="What the book is about, in the publisher's words or your own."></textarea>
+          @if (summaryNote()) {
+            <span class="hint">{{ summaryNote() }}</span>
+          }
+        </div>
+
+        <div class="field span-2">
+          <label for="bf-cover">Cover image link <span class="optional">(optional)</span></label>
+          <input id="bf-cover" class="input" formControlName="coverUrl" type="url" inputmode="url" placeholder="https://…" [attr.aria-invalid]="invalid('coverUrl')" aria-describedby="bf-cover-hint" />
+          <span id="bf-cover-hint" [class]="invalid('coverUrl') ? 'error-text' : 'hint'">
+            {{ invalid('coverUrl') ? 'Use a link that starts with https://' : 'Paste an image link, or upload a photo of the cover.' }}
+          </span>
+        </div>
+
+        <div class="field">
+          <label for="bf-isbn">ISBN <span class="optional">(optional)</span></label>
+          <input id="bf-isbn" class="input" formControlName="isbn" inputmode="numeric" placeholder="978…" />
+        </div>
+        <div class="field">
+          <label for="bf-publisher">Publisher <span class="optional">(optional)</span></label>
+          <input id="bf-publisher" class="input" formControlName="publisher" />
+        </div>
+        <div class="field">
+          <label for="bf-year">Year published <span class="optional">(optional)</span></label>
+          <input id="bf-year" class="input" formControlName="publishedYear" type="number" inputmode="numeric" [attr.aria-invalid]="invalid('publishedYear')" />
+          @if (invalid('publishedYear')) {
+            <span class="error-text">Enter a year like 1871.</span>
+          }
+        </div>
+        <div class="field">
+          <label for="bf-pages">Total pages <span class="optional">(optional)</span></label>
+          <input id="bf-pages" class="input" formControlName="pageCount" type="number" min="1" inputmode="numeric" [attr.aria-invalid]="invalid('pageCount')" />
+          @if (invalid('pageCount')) {
+            <span class="error-text">Use a whole number of pages.</span>
+          }
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Reading status -->
+  <section class="part" aria-labelledby="part-reading">
+    <h2 id="part-reading">Your reading</h2>
+    <fieldset class="status-set">
+      <legend>Where is it in your reading life?</legend>
+      <div class="status-options">
+        @for (s of statuses; track s) {
+          <label class="status-option" [class.selected]="status() === s">
+            <input type="radio" name="status" [value]="s" [checked]="status() === s" (change)="setStatus(s)" />
+            <span class="status-name">{{ statusLabels[s] }}</span>
+            <span class="status-hint">{{ statusHints[s] }}</span>
+          </label>
+        }
+      </div>
+    </fieldset>
+
+    <div class="form-grid reading-grid">
+      @if (status() !== 'want_to_read') {
+        <div class="field">
+          <label for="bf-started">Date started <span class="optional">(optional)</span></label>
+          <input id="bf-started" class="input" type="date" formControlName="startedOn" [max]="today" />
+        </div>
+      }
+      @if (status() === 'completed' || status() === 'dnf') {
+        <div class="field">
+          <label for="bf-finished">{{ status() === 'completed' ? 'Date finished' : 'Date you stopped' }}</label>
+          <input id="bf-finished" class="input" type="date" formControlName="finishedOn" [max]="today" [attr.aria-invalid]="submitted() && form.hasError('finishBeforeStart')" />
+          @if (form.hasError('finishBeforeStart')) {
+            <span class="error-text">This is before the start date.</span>
+          }
+        </div>
+      }
+      @if (status() === 'reading' || status() === 'paused' || status() === 'dnf') {
+        <div class="field">
+          <label for="bf-current">Current page <span class="optional">(optional)</span></label>
+          <input id="bf-current" class="input" type="number" min="0" inputmode="numeric" formControlName="currentPage" [attr.aria-invalid]="form.hasError('pageBeyondTotal')" />
+          @if (form.hasError('pageBeyondTotal')) {
+            <span class="error-text">That's past the last page. Check the total pages above.</span>
+          }
+        </div>
+      }
+      @if (status() !== 'want_to_read') {
+        <div class="field rating-field">
+          <span class="label">Your rating <span class="optional">(optional)</span></span>
+          <div class="rating-row">
+            <app-star-rating [(value)]="rating" [editable]="true" [size]="24" label="Your rating" />
+            @if (rating() !== null) {
+              <button type="button" class="btn btn-sm btn-quiet" (click)="rating.set(null)">Clear</button>
+            }
+          </div>
+        </div>
+      }
+      <div class="field span-2">
+        <label class="check fav-check">
+          <input type="checkbox" formControlName="isFavorite" />
+          <svg lucideHeart [size]="16" aria-hidden="true"></svg>
+          Keep this among my favourites
+        </label>
+      </div>
+    </div>
+
+    @if (status() === 'want_to_read') {
+      <div class="form-grid wish-grid">
+        <div class="field span-2">
+          <label for="bf-reason">Why do you want to read it? <span class="optional">(optional)</span></label>
+          <textarea id="bf-reason" class="textarea" rows="3" formControlName="wishReason" placeholder="A friend's recommendation, a review you loved, a feeling…"></textarea>
+        </div>
+        <fieldset class="field span-2">
+          <legend>How soon?</legend>
+          <div class="priority-row">
+            <label class="pill-option" [class.selected]="form.controls.wishPriority.value === null">
+              <input type="radio" formControlName="wishPriority" [value]="null" />No rush
+            </label>
+            @for (p of priorities; track p) {
+              <label class="pill-option" [class.selected]="form.controls.wishPriority.value === p">
+                <input type="radio" formControlName="wishPriority" [value]="p" />{{ priorityLabels[p] }}
+              </label>
+            }
+          </div>
+        </fieldset>
+      </div>
+    }
+  </section>
+
+  <!-- Thoughts -->
+  <section class="part" aria-labelledby="part-thoughts">
+    <h2 id="part-thoughts">Your thoughts</h2>
+    <div class="form-grid">
+      @if (status() !== 'want_to_read') {
+        <div class="field span-2">
+          <label for="bf-review">Review <span class="optional">(optional)</span></label>
+          <textarea id="bf-review" class="textarea serif" rows="6" formControlName="review" placeholder="What stayed with you?"></textarea>
+        </div>
+      }
+
+      <div class="field span-2 quotes-field">
+        <span class="label">Favourite quotes <span class="optional">(optional)</span></span>
+        <div formArrayName="quotes" class="quote-list">
+          @for (q of quotes.controls; track q; let i = $index) {
+            <div class="quote-row" [formGroupName]="i">
+              <label class="visually-hidden" [for]="'bf-quote-' + i">Quote {{ i + 1 }}</label>
+              <textarea [id]="'bf-quote-' + i" class="textarea serif quote-text" rows="2" formControlName="body" placeholder="A line worth keeping…"></textarea>
+              <div class="quote-side">
+                <label class="visually-hidden" [for]="'bf-quote-page-' + i">Page for quote {{ i + 1 }}</label>
+                <input [id]="'bf-quote-page-' + i" class="input page-input" type="number" min="1" inputmode="numeric" formControlName="page" placeholder="Page" />
+                <button type="button" class="btn btn-icon btn-quiet" (click)="removeQuote(i)" [attr.aria-label]="'Remove quote ' + (i + 1)">
+                  <svg lucideTrash [size]="16"></svg>
+                </button>
+              </div>
+            </div>
+          }
+        </div>
+        <button type="button" class="btn btn-sm add-quote" (click)="addQuote()">
+          <svg lucidePlus [size]="15"></svg> Add a quote
+        </button>
+      </div>
+
+      <div class="field span-2">
+        <label for="bf-notes">Private notes <span class="optional">(optional)</span></label>
+        <textarea id="bf-notes" class="textarea" rows="4" formControlName="notes" placeholder="Characters to remember, threads to follow, anything at all."></textarea>
+      </div>
+      <div class="field span-2">
+        <label for="bf-matters">Why this book matters to you <span class="optional">(optional)</span></label>
+        <textarea id="bf-matters" class="textarea serif" rows="3" formControlName="whyItMatters" placeholder="Where you were when you read it, who gave it to you…"></textarea>
+      </div>
+    </div>
+  </section>
+
+  <div class="form-actions">
+    <button type="button" class="btn btn-quiet" (click)="cancelled.emit()">Cancel</button>
+    <button type="submit" class="btn btn-primary" [disabled]="busy() || uploading()">
+      @if (busy()) {
+        <span class="spinner" aria-hidden="true"></span> Saving…
+      } @else {
+        {{ submitLabel() }}
+      }
+    </button>
+  </div>
+</form>

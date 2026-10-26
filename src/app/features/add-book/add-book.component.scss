@@ -1,0 +1,244 @@
+.back {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: var(--s-3);
+  font-size: var(--step--1);
+}
+.lede {
+  margin-top: var(--s-2);
+}
+
+.tabs {
+  display: inline-flex;
+  gap: 4px;
+  padding: 4px;
+  border-radius: 999px;
+  background: var(--leaf);
+  margin-bottom: var(--s-5);
+}
+.tabs button {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 40px;
+  padding: 0 18px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--ink-soft);
+  font-weight: 540;
+}
+.tabs button.active {
+  background: var(--surface);
+  color: var(--ink);
+  box-shadow: 0 1px 2px rgb(0 0 0 / 0.08);
+}
+
+.search-panel {
+  max-width: 860px;
+}
+.search-bar {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+.search-icon {
+  position: absolute;
+  left: 18px;
+  color: var(--ink-soft);
+  pointer-events: none;
+}
+.search-input {
+  width: 100%;
+  min-height: 60px;
+  padding: 0 52px 0 54px;
+  border: 1px solid var(--rule-strong);
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+  font-family: var(--serif);
+  font-size: var(--step-2);
+  color: var(--ink);
+  transition:
+    border-color var(--dur-fast) var(--ease),
+    box-shadow var(--dur-fast) var(--ease);
+}
+.search-input::placeholder {
+  color: var(--ink-faint);
+  font-style: italic;
+}
+.search-input:focus {
+  outline: none;
+  border-color: var(--forest);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--forest) 14%, transparent);
+}
+.search-input::-webkit-search-cancel-button {
+  display: none;
+}
+.clear {
+  position: absolute;
+  right: 10px;
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--ink-soft);
+}
+.clear:hover {
+  background: var(--leaf);
+}
+
+.search-meta {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--s-2) var(--s-4);
+  margin: var(--s-3) 2px var(--s-5);
+}
+.source {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.source button {
+  border: 0;
+  background: none;
+  padding: 4px 8px;
+  border-radius: 999px;
+  font-size: var(--step--1);
+  color: var(--ink-soft);
+}
+.source button.on {
+  background: var(--sage-soft);
+  color: var(--ink);
+  font-weight: 560;
+}
+
+.fallback {
+  padding: 10px 14px;
+  margin-bottom: var(--s-3);
+  border-radius: var(--radius);
+  background: var(--leaf);
+  font-size: var(--step--1);
+  color: var(--ink-soft);
+}
+.count {
+  margin-bottom: var(--s-2);
+}
+.result-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  transition: opacity var(--dur) var(--ease);
+}
+.result-list.dim {
+  opacity: 0.55;
+}
+.result {
+  display: grid;
+  grid-template-columns: 64px minmax(0, 1fr) auto;
+  gap: var(--s-4);
+  align-items: center;
+  padding: var(--s-4) 0;
+  border-bottom: 1px solid var(--rule);
+  animation: rise-in var(--dur) var(--ease) both;
+}
+.thumb-wrap {
+  width: 64px;
+}
+.info {
+  min-width: 0;
+}
+.info h3 {
+  font-size: var(--step-1);
+  font-weight: 480;
+  line-height: 1.3;
+}
+.subtitle {
+  font-family: var(--serif);
+  font-style: italic;
+  font-size: var(--step--1);
+  color: var(--ink-soft);
+}
+.by {
+  margin-top: 2px;
+  color: var(--ink-soft);
+}
+.facts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px 12px;
+  margin-top: 4px;
+  font-size: var(--step--1);
+  color: var(--ink-faint);
+}
+.result-actions {
+  display: grid;
+  gap: 6px;
+  justify-items: stretch;
+}
+.cant-find {
+  margin-top: var(--s-5);
+}
+
+.skeleton-row {
+  animation: none;
+}
+.skeleton-row .thumb {
+  width: 64px;
+  aspect-ratio: 2 / 3;
+}
+.lines {
+  display: grid;
+  gap: 8px;
+}
+.l1 {
+  height: 16px;
+  width: 60%;
+}
+.l2 {
+  height: 12px;
+  width: 40%;
+}
+.l3 {
+  height: 10px;
+  width: 30%;
+}
+
+.idle {
+  padding: var(--s-7) 0;
+  color: var(--ink-soft);
+}
+.idle p {
+  font-style: italic;
+  font-size: var(--step-1);
+  max-width: 40ch;
+}
+
+@media (max-width: 640px) {
+  .result {
+    grid-template-columns: 56px minmax(0, 1fr);
+    align-items: start;
+  }
+  .thumb-wrap {
+    width: 56px;
+    grid-row: span 2;
+  }
+  .result-actions {
+    grid-column: 2;
+    display: flex;
+    flex-wrap: wrap;
+  }
+  .tabs {
+    display: flex;
+  }
+  .tabs button {
+    flex: 1;
+    justify-content: center;
+    padding: 0 10px;
+  }
+}

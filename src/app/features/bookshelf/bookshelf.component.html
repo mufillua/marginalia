@@ -1,0 +1,120 @@
+<div class="page">
+  <div class="page-head">
+    <div>
+      <h1>My books</h1>
+      @if (total()) {
+        <p class="lede">{{ total() }} {{ total() === 1 ? 'book' : 'books' }} on your shelves.</p>
+      }
+    </div>
+  </div>
+
+  @if (total() || library.loadState() !== 'ready') {
+    <div class="toolbar" role="search" aria-label="Filter your books">
+      <div class="search">
+        <svg lucideSearch [size]="17" aria-hidden="true"></svg>
+        <label for="shelf-search" class="visually-hidden">Search by title or author</label>
+        <input
+          #q
+          id="shelf-search"
+          type="search"
+          class="input"
+          placeholder="Search by title or author"
+          [value]="state.query()"
+          (input)="state.query.set(q.value)"
+        />
+      </div>
+
+      <div class="filters">
+        <div class="filter">
+          <label for="f-status">Status</label>
+          <select id="f-status" class="select" [value]="state.status()" (change)="state.status.set($any(fs.value))" #fs>
+            <option value="">Any status</option>
+            @for (s of statuses; track s) {
+              <option [value]="s" [selected]="state.status() === s">{{ statusLabels[s] }}</option>
+            }
+          </select>
+        </div>
+        <div class="filter">
+          <label for="f-genre">Genre</label>
+          <select id="f-genre" class="select" [value]="state.genre()" (change)="state.genre.set(fg.value)" #fg>
+            <option value="">Any genre</option>
+            @for (g of genres(); track g) {
+              <option [value]="g" [selected]="state.genre() === g">{{ g }}</option>
+            }
+          </select>
+        </div>
+        <div class="filter">
+          <label for="f-rating">Rating</label>
+          <select id="f-rating" class="select" [value]="state.rating()" (change)="state.rating.set($any(fr.value))" #fr>
+            <option value="any">Any rating</option>
+            <option value="5" [selected]="state.rating() === '5'">5 stars</option>
+            <option value="4" [selected]="state.rating() === '4'">4 stars and up</option>
+            <option value="3" [selected]="state.rating() === '3'">3 stars and up</option>
+            <option value="unrated" [selected]="state.rating() === 'unrated'">Not rated</option>
+          </select>
+        </div>
+        <div class="filter">
+          <label for="f-sort">Sort</label>
+          <select id="f-sort" class="select" [value]="state.sort()" (change)="state.sort.set($any(so.value))" #so>
+            <option value="added">Recently added</option>
+            <option value="added-old" [selected]="state.sort() === 'added-old'">Oldest added</option>
+            <option value="title" [selected]="state.sort() === 'title'">Title</option>
+            <option value="author" [selected]="state.sort() === 'author'">Author surname</option>
+            <option value="rating" [selected]="state.sort() === 'rating'">Highest rated</option>
+            <option value="finished" [selected]="state.sort() === 'finished'">Recently finished</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="toolbar-row">
+        <button
+          type="button"
+          class="btn btn-sm fav-toggle"
+          [class.on]="state.favoritesOnly()"
+          [attr.aria-pressed]="state.favoritesOnly()"
+          (click)="state.favoritesOnly.set(!state.favoritesOnly())"
+        >
+          <svg lucideHeart [size]="14"></svg> Favourites
+        </button>
+        @if (filtersActive()) {
+          <button type="button" class="btn btn-sm btn-quiet" (click)="clearFilters()"><svg lucideX [size]="14"></svg> Clear filters</button>
+        }
+        <span class="count" aria-live="polite">
+          @if (filtersActive()) { {{ visible().length }} of {{ total() }} books }
+        </span>
+        <div class="view-toggle" role="group" aria-label="View">
+          <button type="button" [class.on]="state.view() === 'grid'" [attr.aria-pressed]="state.view() === 'grid'" (click)="state.setView('grid')" aria-label="Grid view">
+            <svg lucideLayoutGrid [size]="17"></svg>
+          </button>
+          <button type="button" [class.on]="state.view() === 'list'" [attr.aria-pressed]="state.view() === 'list'" (click)="state.setView('list')" aria-label="List view">
+            <svg lucideList [size]="17"></svg>
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+
+  @if (library.loadState() === 'loading' || library.loadState() === 'idle') {
+    <div class="grid" aria-busy="true" aria-label="Loading your books">
+      @for (i of [1, 2, 3, 4, 5, 6, 7, 8]; track i) {
+        <div class="ghost"><div class="skeleton cover-ghost"></div><div class="skeleton line"></div><div class="skeleton line short"></div></div>
+      }
+    </div>
+  } @else if (!total()) {
+    <app-empty-state heading="Your shelves are waiting" message="Add the book on your nightstand, or one you loved years ago. Everything you add stays in sync across your devices.">
+      <a routerLink="/add" class="btn btn-primary">Add your first book</a>
+    </app-empty-state>
+  } @else if (!visible().length) {
+    <app-empty-state art="search" heading="No books match" message="Try a different word, or loosen the filters.">
+      <button type="button" class="btn" (click)="clearFilters()">Clear filters</button>
+    </app-empty-state>
+  } @else {
+    <ul [class]="state.view() === 'grid' ? 'grid' : 'list'" [attr.aria-label]="'Books, ' + visible().length">
+      @for (book of visible(); track book.id; let i = $index) {
+        <li [style.animation-delay.ms]="i < 16 ? i * 28 : 0">
+          <app-book-card [book]="book" [view]="state.view()" />
+        </li>
+      }
+    </ul>
+  }
+</div>

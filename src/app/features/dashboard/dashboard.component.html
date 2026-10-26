@@ -1,0 +1,209 @@
+<div class="page">
+  <header class="hello">
+    <div>
+      <p class="date">{{ today }}</p>
+      <h1>{{ greeting() }}</h1>
+      <p class="lede">{{ line }}</p>
+    </div>
+  </header>
+
+  @if (library.loadState() === 'loading' || library.loadState() === 'idle') {
+    <div class="nightstand loading" aria-busy="true">
+      <div class="skeleton" style="aspect-ratio: 2/3; width: 100%"></div>
+      <div style="display: grid; gap: 14px; align-content: center">
+        <div class="skeleton" style="height: 14px; width: 30%"></div>
+        <div class="skeleton" style="height: 40px; width: 70%"></div>
+        <div class="skeleton" style="height: 18px; width: 40%"></div>
+        <div class="skeleton" style="height: 40px; width: 100%"></div>
+      </div>
+    </div>
+  } @else if (!books.all().length) {
+    <app-empty-state
+      heading="The first page is the hardest"
+      message="Add a book you're reading now, one you've loved, or one you can't wait to start. Your library follows you to every device."
+    >
+      <a routerLink="/add" class="btn btn-primary">Add your first book</a>
+      <a routerLink="/add" [queryParams]="{ status: 'want_to_read' }" class="btn">Start a to-read list</a>
+    </app-empty-state>
+  } @else {
+    <!-- The nightstand: what she's reading now -->
+    @if (featured(); as b) {
+      <section class="nightstand" aria-labelledby="continue-h">
+        <a [routerLink]="['/book', b.id]" class="nightstand-cover" tabindex="-1" aria-hidden="true">
+          <app-book-cover [title]="b.title" [authors]="b.authors" [coverUrl]="b.coverUrl" [eager]="true" [ribbon]="true" [decorative]="true" />
+        </a>
+        <div class="nightstand-body">
+          <h2 id="continue-h" class="kicker">Continue your story</h2>
+          <h3 class="book-title"><a [routerLink]="['/book', b.id]">{{ b.title }}</a></h3>
+          <p class="by">{{ authorLine(b.authors) }}</p>
+
+          @if (b.pageCount) {
+            <app-vine-progress [percent]="percent() ?? 0" [label]="'Progress in ' + b.title" [valueText]="'Page ' + b.currentPage + ' of ' + b.pageCount" />
+            <p class="progress-words">
+              Page {{ b.currentPage }} of {{ b.pageCount }}, <em>{{ percent() }}% of the way</em>
+            </p>
+          } @else if (b.currentPage) {
+            <p class="progress-words">On page {{ b.currentPage }}</p>
+          }
+
+          <form class="page-form" (ngSubmit)="saveProgress(b)">
+            <label for="dash-page">I'm on page</label>
+            <input id="dash-page" name="page" class="input" type="number" min="0" inputmode="numeric" [max]="b.pageCount ?? 50000" [(ngModel)]="pageInput" />
+            <button type="submit" class="btn btn-sm btn-primary" [disabled]="saving()">Update</button>
+            <a [routerLink]="['/book', b.id]" class="btn btn-sm btn-quiet">Open book</a>
+          </form>
+        </div>
+      </section>
+
+      @if (alsoReading().length) {
+        <section class="section" aria-labelledby="also-h">
+          <div class="section-head"><h2 id="also-h">Also on your nightstand</h2></div>
+          <ul class="cover-row">
+            @for (x of alsoReading(); track x.id) {
+              <li>
+                <a [routerLink]="['/book', x.id]">
+                  <app-book-cover [title]="x.title" [authors]="x.authors" [coverUrl]="x.coverUrl" [ribbon]="true" [decorative]="true" />
+                  <span class="row-title">{{ x.title }}</span>
+                </a>
+              </li>
+            }
+          </ul>
+        </section>
+      }
+    } @else {
+      <section class="nightstand empty-nightstand" aria-labelledby="next-h">
+        <div class="nightstand-body wide">
+          <h2 id="next-h" class="kicker">Nothing on your nightstand</h2>
+          @if (upNext().length) {
+            <p class="serif invite">Ready for the next one? These are waiting on your to-read list.</p>
+            <ul class="next-list">
+              @for (n of upNext(); track n.id) {
+                <li>
+                  <app-book-cover [title]="n.title" [authors]="n.authors" [coverUrl]="n.coverUrl" [decorative]="true" />
+                  <div>
+                    <a [routerLink]="['/book', n.id]" class="next-title">{{ n.title }}</a>
+                    <p class="meta">{{ authorLine(n.authors) }}</p>
+                    <button type="button" class="btn btn-sm" (click)="startReading(n)">Start reading</button>
+                  </div>
+                </li>
+              }
+            </ul>
+          } @else {
+            <p class="serif invite">Mark a book as currently reading and it will wait for you here.</p>
+            <a routerLink="/add" class="btn btn-primary">Add a book</a>
+          }
+        </div>
+      </section>
+    }
+
+    <!-- A quiet page of the month, and a line to carry -->
+    <div class="pair section">
+      <section class="month" aria-labelledby="month-h">
+        <h2 id="month-h">This month</h2>
+        <p class="month-sentence">{{ monthSentence() }}</p>
+        <div class="goal">
+          @if (stats.goalProgress(); as g) {
+            @if (g.target) {
+              <app-vine-progress [percent]="g.percent ?? 0" [label]="'Reading goal for ' + year" [valueText]="g.done + ' of ' + g.target + ' books'" />
+              <p class="goal-words">
+                <strong>{{ g.done }}</strong> of {{ g.target }} books read in {{ year }}
+                @if (g.done >= g.target) { <em>— goal reached.</em> }
+              </p>
+              <a routerLink="/stats" class="small-link">See your reading year</a>
+            } @else {
+              <p class="goal-words">{{ g.done }} {{ g.done === 1 ? 'book' : 'books' }} finished in {{ year }}.</p>
+              <a routerLink="/stats" class="small-link">Set a reading goal</a>
+            }
+          }
+        </div>
+      </section>
+
+      <figure class="quote" aria-labelledby="quote-text">
+        <blockquote id="quote-text">{{ quote().text }}</blockquote>
+        <figcaption>
+          <span>{{ quote().author }}</span>
+          <cite>{{ quote().source }}</cite>
+        </figcaption>
+        <button type="button" class="btn btn-sm btn-quiet another" (click)="nextQuote()">
+          <svg lucideRefreshCw [size]="14"></svg> Another line
+        </button>
+      </figure>
+    </div>
+
+    @if (bookOfYear(); as boty) {
+      <section class="section boty" aria-labelledby="boty-h">
+        <a [routerLink]="['/book', boty.book.id]" class="boty-cover" tabindex="-1" aria-hidden="true">
+          <app-book-cover [title]="boty.book.title" [authors]="boty.book.authors" [coverUrl]="boty.book.coverUrl" [decorative]="true" />
+        </a>
+        <div>
+          <h2 id="boty-h" class="kicker"><svg lucideAward [size]="16"></svg> Your book of {{ year }}</h2>
+          <a [routerLink]="['/book', boty.book.id]" class="boty-title">{{ boty.book.title }}</a>
+          @if (boty.note) {
+            <p class="serif boty-note">{{ boty.note }}</p>
+          }
+        </div>
+      </section>
+    }
+
+    @if (recentlyFinished().length) {
+      <section class="section" aria-labelledby="finished-h">
+        <div class="section-head">
+          <h2 id="finished-h">Recently finished</h2>
+          <a routerLink="/shelf">All books</a>
+        </div>
+        <ul class="cover-row">
+          @for (x of recentlyFinished(); track x.id) {
+            <li>
+              <a [routerLink]="['/book', x.id]">
+                <app-book-cover [title]="x.title" [authors]="x.authors" [coverUrl]="x.coverUrl" [decorative]="true" />
+                <span class="row-title">{{ x.title }}</span>
+              </a>
+              @if (x.rating !== null) {
+                <app-star-rating [value]="x.rating" [size]="12" />
+              }
+            </li>
+          }
+        </ul>
+      </section>
+    }
+
+    <section class="section" aria-labelledby="added-h">
+      <div class="section-head">
+        <h2 id="added-h">Recently added</h2>
+        <a routerLink="/shelf">All books</a>
+      </div>
+      @if (recentlyAdded().length) {
+        <ul class="cover-row">
+          @for (x of recentlyAdded(); track x.id) {
+            <li>
+              <a [routerLink]="['/book', x.id]">
+                <app-book-cover [title]="x.title" [authors]="x.authors" [coverUrl]="x.coverUrl" [ribbon]="x.status === 'reading'" [decorative]="true" />
+                <span class="row-title">{{ x.title }}</span>
+              </a>
+            </li>
+          }
+        </ul>
+      } @else {
+        <p class="serif invite">Only to-read books so far. <a routerLink="/to-read">Start one</a> and it will appear here.</p>
+      }
+    </section>
+
+    @if (favorites().length) {
+      <section class="section" aria-labelledby="fav-h">
+        <div class="section-head">
+          <h2 id="fav-h">Favourites</h2>
+        </div>
+        <ul class="cover-row">
+          @for (x of favorites(); track x.id) {
+            <li>
+              <a [routerLink]="['/book', x.id]">
+                <app-book-cover [title]="x.title" [authors]="x.authors" [coverUrl]="x.coverUrl" [decorative]="true" />
+                <span class="row-title">{{ x.title }}</span>
+              </a>
+            </li>
+          }
+        </ul>
+      </section>
+    }
+  }
+</div>

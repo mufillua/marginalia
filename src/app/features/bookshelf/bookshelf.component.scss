@@ -1,0 +1,133 @@
+.lede {
+  margin-top: var(--s-2);
+}
+
+.toolbar {
+  display: grid;
+  gap: var(--s-3);
+  margin-bottom: var(--s-6);
+  padding-bottom: var(--s-4);
+  border-bottom: 1px solid var(--rule);
+}
+.search {
+  position: relative;
+}
+.search svg {
+  position: absolute;
+  left: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--ink-soft);
+}
+.search .input {
+  padding-left: 42px;
+}
+.filters {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--s-3);
+}
+.filter {
+  display: grid;
+  gap: 4px;
+}
+.filter label {
+  font-size: var(--step--1);
+  color: var(--ink-soft);
+}
+.filter .select {
+  min-height: 40px;
+  padding-top: 6px;
+  padding-bottom: 6px;
+  font-size: var(--step-0);
+}
+.toolbar-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--s-2);
+}
+.fav-toggle svg {
+  color: var(--rose-ink);
+}
+.fav-toggle.on {
+  background: var(--rose-soft);
+  border-color: var(--rose);
+}
+.fav-toggle.on svg {
+  fill: var(--rose);
+}
+.count {
+  font-size: var(--step--1);
+  color: var(--ink-soft);
+  margin-left: var(--s-2);
+}
+.view-toggle {
+  margin-left: auto;
+  display: inline-flex;
+  padding: 3px;
+  border-radius: var(--radius);
+  background: var(--leaf);
+}
+.view-toggle button {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 32px;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--ink-soft);
+}
+.view-toggle button.on {
+  background: var(--surface);
+  color: var(--ink);
+  box-shadow: 0 1px 2px rgb(0 0 0 / 0.08);
+}
+
+.grid {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(156px, 1fr));
+  gap: var(--s-7) var(--s-5);
+}
+.list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  max-width: 860px;
+}
+.grid > li,
+.list > li {
+  animation: rise-in 320ms var(--ease) both;
+  min-width: 0;
+}
+
+.ghost {
+  display: grid;
+  gap: 10px;
+}
+.cover-ghost {
+  aspect-ratio: 2 / 3;
+}
+.line {
+  height: 14px;
+  width: 80%;
+}
+.line.short {
+  width: 50%;
+}
+
+@media (max-width: 1020px) {
+  .filters {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@media (max-width: 560px) {
+  .grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--s-6) var(--s-4);
+  }
+}

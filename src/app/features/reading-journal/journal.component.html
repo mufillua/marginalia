@@ -1,0 +1,158 @@
+<div class="page">
+  <div class="page-head">
+    <div>
+      <h1>Journal</h1>
+      <p class="lede">Thoughts in the margins, kept in order.</p>
+    </div>
+    @if (!editing()) {
+      <button type="button" class="btn btn-primary" (click)="startNew()"><svg lucidePlus [size]="18"></svg> New entry</button>
+    }
+  </div>
+
+  <div #editorTop></div>
+  @if (editing(); as ed) {
+    <form class="sheet editor" [formGroup]="form" (ngSubmit)="save()" novalidate aria-labelledby="editor-h">
+      <h2 id="editor-h" class="visually-hidden">{{ ed === 'new' ? 'New journal entry' : 'Edit journal entry' }}</h2>
+      <div class="editor-meta">
+        <div class="field">
+          <label for="je-date">Date</label>
+          <input id="je-date" type="date" class="input" formControlName="entryDate" [max]="today" />
+        </div>
+        <div class="field grow">
+          <label for="je-book">About</label>
+          <select id="je-book" class="select" formControlName="bookId">
+            <option value="">Not about one particular book</option>
+            @for (b of bookOptions(); track b.id) {
+              <option [value]="b.id">{{ b.title }} ({{ authorLine(b.authors) }})</option>
+            }
+          </select>
+        </div>
+      </div>
+      <div class="field">
+        <label for="je-title" class="visually-hidden">Title</label>
+        <input id="je-title" class="title-input" formControlName="title" placeholder="A title, if you like" />
+      </div>
+      <div class="field">
+        <label for="je-body" class="visually-hidden">Your thoughts</label>
+        <textarea
+          id="je-body"
+          class="body-input"
+          formControlName="body"
+          rows="9"
+          placeholder="What are you thinking about? A favourite moment, a character you can't shake, how it ended…"
+          [attr.aria-invalid]="invalid('body')"
+          aria-describedby="je-body-err"
+        ></textarea>
+        @if (invalid('body')) {
+          <span id="je-body-err" class="error-text">Write a few words before saving.</span>
+        }
+      </div>
+      <div class="quote-fields">
+        <svg lucideQuote [size]="18" aria-hidden="true"></svg>
+        <div class="field grow">
+          <label for="je-quote">A line to remember <span class="optional">(optional)</span></label>
+          <textarea id="je-quote" class="textarea serif" rows="2" formControlName="quote" placeholder="Copy a sentence that stayed with you"></textarea>
+        </div>
+        <div class="field page">
+          <label for="je-page">Page</label>
+          <input id="je-page" type="number" min="1" class="input" formControlName="quotePage" />
+        </div>
+      </div>
+      <div class="field">
+        <label for="je-tags">Tags <span class="optional">(optional)</span></label>
+        <app-chips-input formControlName="tags" inputId="je-tags" placeholder="e.g. rereading, ending, characters" [suggestions]="journal.tags()" />
+      </div>
+      <div class="editor-actions">
+        <button type="button" class="btn btn-quiet" (click)="cancel()">Cancel</button>
+        <button type="submit" class="btn btn-primary" [disabled]="saving()">
+          @if (saving()) { <span class="spinner" aria-hidden="true"></span> Saving… } @else { {{ ed === 'new' ? 'Save entry' : 'Save changes' }} }
+        </button>
+      </div>
+    </form>
+  }
+
+  @if (journal.entries().length) {
+    <div class="filters" role="group" aria-label="Filter entries">
+      <div class="field">
+        <label for="jf-book">Book</label>
+        <select id="jf-book" class="select" [value]="bookFilter()" (change)="setBookFilter(jb.value)" #jb>
+          <option value="">All entries</option>
+          <option value="none" [selected]="bookFilter() === 'none'">Not about a particular book</option>
+          @for (b of bookOptions(); track b.id) {
+            <option [value]="b.id" [selected]="bookFilter() === b.id">{{ b.title }}</option>
+          }
+        </select>
+      </div>
+      @if (journal.tags().length) {
+        <div class="tag-filter">
+          <span class="hint">Tags</span>
+          <div class="tag-list">
+            @for (t of journal.tags(); track t) {
+              <button type="button" class="tag" [class.on]="tagFilter().toLowerCase() === t.toLowerCase()" [attr.aria-pressed]="tagFilter().toLowerCase() === t.toLowerCase()" (click)="toggleTag(t)">{{ t }}</button>
+            }
+          </div>
+        </div>
+      }
+      @if (bookFilter() || tagFilter()) {
+        <button type="button" class="btn btn-sm btn-quiet clear" (click)="clearFilters()"><svg lucideX [size]="14"></svg> Show all entries</button>
+      }
+    </div>
+  }
+
+  @if (library.loadState() === 'loading' || library.loadState() === 'idle') {
+    <div class="sheet" aria-busy="true">
+      <div class="skeleton" style="height: 16px; width: 30%; margin-bottom: 14px"></div>
+      <div class="skeleton" style="height: 90px"></div>
+    </div>
+  } @else if (!journal.entries().length && !editing()) {
+    <app-empty-state art="journal" heading="A blank page" message="Write about a book you're reading, a line you loved, or how a story ended for you. Entries are private to you.">
+      <button type="button" class="btn btn-primary" (click)="startNew()">Write your first entry</button>
+    </app-empty-state>
+  } @else if (!filtered().length && journal.entries().length) {
+    <app-empty-state art="search" heading="No entries here yet" message="Nothing matches these filters.">
+      <button type="button" class="btn" (click)="clearFilters()">Show all entries</button>
+    </app-empty-state>
+  } @else {
+    @for (g of groups(); track g.key) {
+      <section class="month" [attr.aria-labelledby]="'m-' + g.key">
+        <h2 [id]="'m-' + g.key">{{ g.label }}</h2>
+        <div class="sheet">
+          @for (e of g.entries; track e.id) {
+            <article class="entry" [id]="'entry-' + e.id" [attr.aria-labelledby]="'e-' + e.id">
+              <header class="entry-head">
+                <time [attr.datetime]="e.entryDate" class="entry-date">{{ formatLongDate(e.entryDate) }}</time>
+                @if (bookFor(e); as b) {
+                  <a [routerLink]="['/book', b.id]" class="entry-book">
+                    <span class="mini-cover"><app-book-cover [title]="b.title" [authors]="b.authors" [coverUrl]="b.coverUrl" [decorative]="true" /></span>
+                    <span>{{ b.title }}</span>
+                  </a>
+                } @else if (e.bookId) {
+                  <span class="entry-book gone">A book no longer on your shelf</span>
+                }
+              </header>
+              <h3 [id]="'e-' + e.id" [class.visually-hidden]="!e.title">{{ e.title || 'Entry from ' + formatLongDate(e.entryDate) }}</h3>
+              <p class="entry-body">{{ e.body }}</p>
+              @if (e.quote) {
+                <blockquote class="entry-quote">
+                  {{ e.quote }}
+                  @if (e.quotePage) { <span class="qpage">p. {{ e.quotePage }}</span> }
+                </blockquote>
+              }
+              <footer class="entry-foot">
+                @if (e.tags.length) {
+                  <ul class="tag-list" aria-label="Tags">
+                    @for (t of e.tags; track t) { <li><button type="button" class="tag" (click)="toggleTag(t)">{{ t }}</button></li> }
+                  </ul>
+                }
+                <div class="entry-actions">
+                  <button type="button" class="btn btn-sm btn-quiet" (click)="edit(e)" [attr.aria-label]="'Edit entry from ' + formatLongDate(e.entryDate)"><svg lucidePencil [size]="14"></svg> Edit</button>
+                  <button type="button" class="btn btn-sm btn-quiet danger" (click)="remove(e)" [attr.aria-label]="'Delete entry from ' + formatLongDate(e.entryDate)"><svg lucideTrash [size]="14"></svg> Delete</button>
+                </div>
+              </footer>
+            </article>
+          }
+        </div>
+      </section>
+    }
+  }
+</div>

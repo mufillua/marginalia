@@ -1,0 +1,116 @@
+<a class="skip-link" href="#main">Skip to content</a>
+
+<aside class="sidebar" aria-label="Main">
+  <a routerLink="/" class="wordmark" aria-label="Marginalia, home">
+    <span class="mark">Marginalia</span>
+    <span class="tagline">a reading journal</span>
+  </a>
+
+  <a routerLink="/add" class="btn btn-primary btn-block add">
+    <svg lucideBookPlus [size]="18"></svg>
+    Add a book
+  </a>
+
+  <nav class="nav">
+    <a routerLink="/" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }" ariaCurrentWhenActive="page">
+      <svg lucideHouse [size]="18"></svg>Home
+    </a>
+    <a routerLink="/shelf" routerLinkActive="active" ariaCurrentWhenActive="page">
+      <svg lucideLibrary [size]="18"></svg>My books
+    </a>
+    <a routerLink="/to-read" routerLinkActive="active" ariaCurrentWhenActive="page">
+      <svg lucideBookmark [size]="18"></svg>To read
+    </a>
+    <a routerLink="/journal" routerLinkActive="active" ariaCurrentWhenActive="page">
+      <svg lucideNotebookPen [size]="18"></svg>Journal
+    </a>
+    <a routerLink="/stats" routerLinkActive="active" ariaCurrentWhenActive="page">
+      <svg lucideChartColumn [size]="18"></svg>Reading year
+    </a>
+  </nav>
+
+  <div class="sidebar-foot">
+    <div class="sync" [class]="'sync sync-' + sync().icon" role="status" aria-live="polite">
+      @switch (sync().icon) {
+        @case ('off') { <svg lucideCloudOff [size]="15"></svg> }
+        @case ('busy') { <svg lucideRefreshCw [size]="15" class="spin"></svg> }
+        @default { <svg lucideCloud [size]="15"></svg> }
+      }
+      <span>
+        <strong>{{ sync().text }}</strong>
+        @if (sync().detail) {
+          <span class="sync-detail">{{ sync().detail }}</span>
+        }
+      </span>
+    </div>
+    <a routerLink="/settings" routerLinkActive="active" ariaCurrentWhenActive="page" class="settings-link">
+      <svg lucideSettings [size]="17"></svg>
+      <span class="who">
+        <span class="who-name">{{ profile.displayName() || 'Settings' }}</span>
+        <span class="who-sub">Settings</span>
+      </span>
+    </a>
+  </div>
+</aside>
+
+<header class="topbar">
+  <a routerLink="/" class="wordmark small" aria-label="Marginalia, home"><span class="mark">Marginalia</span></a>
+  <span class="topbar-sync" [class]="'topbar-sync sync-' + sync().icon" aria-hidden="true">
+    @switch (sync().icon) {
+      @case ('off') { <svg lucideCloudOff [size]="16"></svg> }
+      @case ('busy') { <svg lucideRefreshCw [size]="16" class="spin"></svg> }
+      @default { <svg lucideCloud [size]="16"></svg> }
+    }
+    {{ sync().text }}
+  </span>
+</header>
+
+<main id="main" class="main" tabindex="-1">
+  @if (!connectivity.online()) {
+    <div class="banner banner-offline" role="status">
+      <svg lucideCloudOff [size]="16"></svg>
+      You're offline. You can keep browsing, but new changes need a connection to save.
+    </div>
+  } @else if (library.loadState() === 'error' || (library.loadError() && library.loadState() === 'ready')) {
+    <div class="banner banner-error" role="alert">
+      <span>{{ library.loadError() }}</span>
+      <button type="button" class="btn btn-sm" (click)="retry()">Try again</button>
+    </div>
+  }
+  <router-outlet />
+</main>
+
+<nav class="tabbar" aria-label="Main">
+  <a routerLink="/" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }" ariaCurrentWhenActive="page">
+    <svg lucideHouse [size]="20"></svg><span>Home</span>
+  </a>
+  <a routerLink="/shelf" routerLinkActive="active" ariaCurrentWhenActive="page">
+    <svg lucideLibrary [size]="20"></svg><span>Books</span>
+  </a>
+  <a routerLink="/add" routerLinkActive="active" ariaCurrentWhenActive="page" class="tab-add" aria-label="Add a book">
+    <span class="tab-add-circle"><svg lucidePlus [size]="22"></svg></span>
+  </a>
+  <a routerLink="/journal" routerLinkActive="active" ariaCurrentWhenActive="page">
+    <svg lucideNotebookPen [size]="20"></svg><span>Journal</span>
+  </a>
+  <button
+    #moreButton
+    type="button"
+    class="tab-more"
+    [class.active]="moreOpen()"
+    (click)="toggleMore()"
+    [attr.aria-expanded]="moreOpen()"
+    aria-controls="more-sheet"
+  >
+    <svg lucideEllipsis [size]="20"></svg><span>More</span>
+  </button>
+</nav>
+
+@if (moreOpen()) {
+  <div #moreSheet id="more-sheet" class="more-sheet" animate.enter="sheet-in">
+    <a routerLink="/to-read" routerLinkActive="active" ariaCurrentWhenActive="page"><svg lucideBookmark [size]="18"></svg>To read</a>
+    <a routerLink="/stats" routerLinkActive="active" ariaCurrentWhenActive="page"><svg lucideChartColumn [size]="18"></svg>Reading year</a>
+    <a routerLink="/settings" routerLinkActive="active" ariaCurrentWhenActive="page"><svg lucideSettings [size]="18"></svg>Settings</a>
+    <button type="button" (click)="signOut()" [disabled]="signingOut()"><svg lucideLogOut [size]="18"></svg>Sign out</button>
+  </div>
+}
