@@ -1,5 +1,7 @@
 # Marginalia — a reading journal
 
+**Live:** https://marginaliashelf.vercel.app
+
 A private, cloud-synced book tracker: a bookshelf, a to-read list, a notebook-style
 journal and a quiet "reading year", for one reader across all her devices.
 
@@ -47,9 +49,9 @@ and is heavily rate-limited. Her confirmation and reset emails will fail with
 
 *Authentication → URL Configuration*
 
-- **Site URL:** your production URL, e.g. `https://marginalia.vercel.app`
+- **Site URL:** `https://marginaliashelf.vercel.app`
 - **Redirect URLs:** add
-  - `https://marginalia.vercel.app/**` (your real domain)
+  - `https://marginaliashelf.vercel.app/**`
   - `http://localhost:4200/**` (local development)
 
 ### c) Close sign-ups once she has an account (recommended)
@@ -82,6 +84,7 @@ Without them, the app builds and shows a "setup needed" page instead of crashing
 | `SUPABASE_PUBLISHABLE_KEY` | yes | `sb_publishable_…` (or legacy anon key). **Never** a secret/service-role key — the script refuses those. |
 | `GOOGLE_BOOKS_API_KEY` | no | Raises the search quota. Restrict it to your domain in Google Cloud. |
 | `ENABLE_GOOGLE_SIGN_IN` | no | `true` once Google auth is configured. |
+| `SITE_URL` | no | Production address for canonical links. Defaults to `https://marginaliashelf.vercel.app`. |
 
 The publishable key is designed to be public; access control lives in the database
 (RLS), not in the key.
@@ -95,6 +98,16 @@ The publishable key is designed to be public; access control lives in the databa
    `SUPABASE_PUBLISHABLE_KEY` (Production and Preview).
 4. Deploy, then put the deployed URL into Supabase's **Site URL** and
    **Redirect URLs** (step 2b).
+
+### Search engines and link previews
+
+- `public/robots.txt` and `public/sitemap.xml` list only the public pages
+  (sign-in, register). Library pages are blocked and marked `noindex`.
+- `src/index.html` carries Open Graph / Twitter tags and `public/og-image.png`
+  (1200×630), so shared links show a proper preview card.
+- `SeoService` sets the canonical link and robots tag for each page as she
+  navigates. If the domain ever changes, update `SITE_URL`, `robots.txt`,
+  `sitemap.xml` and the absolute URLs in `src/index.html`.
 
 ## 5. Using a fresh Supabase project instead
 

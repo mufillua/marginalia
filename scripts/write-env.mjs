@@ -5,6 +5,8 @@
 //   SUPABASE_PUBLISHABLE_KEY  sb_publishable_... or legacy anon key    (required)
 //   GOOGLE_BOOKS_API_KEY      optional; raises the Google Books quota
 //   ENABLE_GOOGLE_SIGN_IN     "true" once Google is enabled in Supabase Auth
+//   SITE_URL                  production address, used for canonical links
+//                             (default https://marginaliashelf.vercel.app)
 //
 // Never put a service-role / secret key here: everything in this file ships
 // to the browser.
@@ -31,6 +33,7 @@ const config = {
   supabasePublishableKey: read('SUPABASE_PUBLISHABLE_KEY'),
   googleBooksApiKey: read('GOOGLE_BOOKS_API_KEY'),
   enableGoogleSignIn: read('ENABLE_GOOGLE_SIGN_IN').toLowerCase() === 'true',
+  siteUrl: (read('SITE_URL') || 'https://marginaliashelf.vercel.app').replace(/\/+$/, ''),
 };
 
 if (/service_role|sb_secret_/i.test(config.supabasePublishableKey)) {

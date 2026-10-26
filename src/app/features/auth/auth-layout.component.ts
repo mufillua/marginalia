@@ -36,6 +36,11 @@ import { RouterOutlet } from '@angular/router';
           <span class="mark small">Marginalia</span>
           <router-outlet />
         </div>
+        <footer class="credit">
+          <a href="https://maimoondigital.vercel.app/" target="_blank" rel="noopener">
+            Designed and developed by Maimoon Digital<span class="visually-hidden"> (opens in a new tab)</span>
+          </a>
+        </footer>
       </main>
     </div>
   `,
@@ -104,12 +109,27 @@ import { RouterOutlet } from '@angular/router';
       stroke: none;
     }
     .form-side {
-      display: grid;
-      place-items: center;
-      padding: var(--s-7) clamp(20px, 6vw, 72px);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: var(--s-7) clamp(20px, 6vw, 72px) var(--s-5);
     }
     .form-wrap {
       width: min(400px, 100%);
+      margin-block: auto;
+    }
+    .credit {
+      margin-top: var(--s-7);
+      font-size: var(--step--1);
+      text-align: center;
+    }
+    .credit a {
+      color: var(--ink-soft);
+      text-decoration-color: var(--rule-strong);
+    }
+    .credit a:hover {
+      color: var(--ink);
+      text-decoration-color: currentColor;
     }
     .mark.small {
       display: none;
@@ -124,8 +144,10 @@ import { RouterOutlet } from '@angular/router';
         display: none;
       }
       .form-side {
-        place-items: start center;
         padding-top: var(--s-8);
+      }
+      .form-wrap {
+        margin-block: 0 auto;
       }
       .mark.small {
         display: block;

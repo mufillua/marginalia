@@ -1,0 +1,15 @@
+# Marginalia is a private reading journal. Only the sign-in pages are public;
+# every library page needs an account and is kept out of search results.
+User-agent: *
+Allow: /sign-in
+Allow: /register
+Disallow: /shelf
+Disallow: /book/
+Disallow: /add
+Disallow: /journal
+Disallow: /to-read
+Disallow: /stats
+Disallow: /settings
+Disallow: /reset-password
+
+Sitemap: https://marginaliashelf.vercel.app/sitemap.xml

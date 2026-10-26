@@ -5,6 +5,8 @@ export interface AppEnv {
   supabasePublishableKey: string;
   googleBooksApiKey: string;
   enableGoogleSignIn: boolean;
+  /** Production address, e.g. https://marginaliashelf.vercel.app */
+  siteUrl: string;
 }
 
 export const env: AppEnv = generatedEnv;
